@@ -1,4 +1,3 @@
-cirrus.yml
 task:
   name: Windows RDP
   windows_container:
