@@ -1,0 +1,30 @@
+cirrus.yml
+task:
+  name: Windows RDP
+  windows_container:
+    image: cirrusci/windowsservercore:2019
+  ngrok_script: |
+    # Download and install ngrok
+    Invoke-WebRequest -Uri https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-windows-amd64.zip -OutFile ngrok.zip
+    Expand-Archive ngrok.zip -DestinationPath C:\ngrok
+    # Set the authtoken (replace with your own)
+    C:\ngrok\ngrok.exe authtoken 2bysCIWi2mVlMe0kgTqWWCrnMV3_TrADCnpJaEZjeBkibRUJ
+    # Start a TCP tunnel on port 3389 (RDP)
+    C:\ngrok\ngrok.exe tcp 3389 -log=stdout > ngrok.log &
+  user_script: |
+    # Create a new user with admin rights (replace with your own username and password)
+    net user USERNAME PASSWORD /add
+    net localgroup administrators USERNAME /add
+    # Enable RDP and allow firewall exception
+    Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server'-name "fDenyTSConnections" -Value 0
+    Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
+  print_script: |
+    # Print the ngrok IP, user and password for RDP
+    $ngrok_url = ((Get-Content ngrok.log -Raw) -split '\s+')[3]
+    Write-Output "RDP IP: $ngrok_url"
+    Write-Output "RDP User: USERNAME"
+    Write-Output "RDP Password: PASSWORD"
+  always:
+    sleep_script: |
+      # Sleep for 2 hours or until timeout
+      Start-Sleep -Seconds 7200
